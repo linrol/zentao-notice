@@ -43,13 +43,13 @@ public class ZentaoServiceImpl implements ZentaoService {
 
   @Override
   @PostConstruct
-  public boolean userLogin(String account, String password) {
+  public boolean userLogin() {
     if (zentaosid == null) {
       JSONObject sessionResult = JSON.parseObject(HttpClientUtils.get(getSessionIdUrl, null));
       zentaosid = sessionResult.getJSONObject("data").getString("sessionID");
     }
     JSONObject loginResult = JSON.parseObject(
-        HttpClientUtils.get(String.format(loginUrl, account, password, zentaosid), null));
+        HttpClientUtils.get(String.format(loginUrl, user, password, zentaosid), null));
     if (!loginResult.getString("status").equals("success")) {
       logger.error("登录失败：{}", loginResult.toJSONString());
       return false;
@@ -69,7 +69,7 @@ public class ZentaoServiceImpl implements ZentaoService {
 
   public <T extends BaseEntity> List<T> getResourceList(String url, ZentaoResource zentaoResource) {
     if (zentaosid == null) {
-      userLogin(user, password);
+      userLogin();
     }
     url += "?zentaosid=" + zentaosid;
     JSONObject result = JSON.parseObject(HttpClientUtils.get(url, null));

@@ -11,11 +11,9 @@ public interface ZentaoService {
   /**
    * 用户登录
    *
-   * @param account
-   * @param password
    * @return
    */
-  public boolean userLogin(String account, String password);
+  public boolean userLogin();
 
   /**
    * 获取bug列表

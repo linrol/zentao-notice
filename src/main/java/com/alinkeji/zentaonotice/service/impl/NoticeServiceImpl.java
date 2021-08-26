@@ -2,6 +2,7 @@ package com.alinkeji.zentaonotice.service.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.alinkeji.zentaonotice.ZentaoNoticeApplication;
 import com.alinkeji.zentaonotice.entity.BaseEntity;
 import com.alinkeji.zentaonotice.entity.Bug;
 import com.alinkeji.zentaonotice.entity.Task;
@@ -15,6 +16,8 @@ import com.alinkeji.zentaonotice.service.ZentaoService.ListResourceHandler;
 import com.alinkeji.zentaonotice.util.DateUtils;
 import com.alinkeji.zentaonotice.util.HttpClientUtils;
 import com.alinkeji.zentaonotice.util.RedisUtil;
+import com.alinkeji.zentaonotice.util.ShutdownContext;
+import com.alinkeji.zentaonotice.util.SpringContextUtils;
 import com.google.common.collect.Lists;
 import java.util.Date;
 import java.util.List;
@@ -26,6 +29,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
 /**
@@ -35,7 +40,7 @@ import org.springframework.stereotype.Component;
  * @date 2021年08月26日 21:17 Copyright (c) 2020, linrol@77hub.com All Rights Reserved.
  */
 @Component
-public class NoticeServiceImpl implements NoticeService {
+public class NoticeServiceImpl implements NoticeService, ApplicationRunner {
 
   private Logger logger = LoggerFactory.getLogger(NoticeServiceImpl.class);
 
@@ -66,6 +71,10 @@ public class NoticeServiceImpl implements NoticeService {
     userList.add(user10);
   }
 
+
+  @Autowired
+  private ShutdownContext shutdownContext;
+
   @Autowired
   private ZentaoService zentaoService;
 
@@ -74,6 +83,8 @@ public class NoticeServiceImpl implements NoticeService {
 
   @Value("${notice.group}")
   private String noticeGroup;
+
+  private boolean noticeStatus = false;
 
   /**
    * 一次性通知
@@ -137,8 +148,9 @@ public class NoticeServiceImpl implements NoticeService {
     String pushMessage = JSON.toJSONString(wxWorkMessage);
     JSONObject jsonObject = JSON.parseObject(pushMessage);
     String hookKey = getWxWorkWebHookKey(noticeGroup);
-    String post = HttpClientUtils.post(String.format(wxWorkWebHook, hookKey), jsonObject);
-    logger.info(post);
+    // String post = HttpClientUtils.post(String.format(wxWorkWebHook, hookKey), jsonObject);
+    noticeStatus = true;
+    logger.info("exit: {}", jsonObject);
     return true;
   }
 
@@ -150,5 +162,12 @@ public class NoticeServiceImpl implements NoticeService {
    */
   private String getWxWorkWebHookKey(String noticeGroup) {
     return redisUtil.hget("WxWebHookKey", noticeGroup).toString();
+  }
+
+  @Override
+  public void run(ApplicationArguments args) {
+    if (noticeStatus) {
+      shutdownContext.showdown();
+    }
   }
 }
