@@ -161,9 +161,6 @@ public class NoticeServiceImpl implements NoticeService, ApplicationRunner {
    * @return
    */
   private String getWxWorkWebHookKey(String noticeGroup) {
-    logger.info(noticeGroup + "1");
-    logger.info(redisUtil + "2");
-    logger.info(redisUtil.hget("WxWebHookKey", noticeGroup) + "3");
     return redisUtil.hget("WxWebHookKey", noticeGroup).toString();
   }
 
