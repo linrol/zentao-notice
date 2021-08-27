@@ -16,6 +16,8 @@ public class BaseEntity {
 
   private String title;
 
+  private String status;
+
   private JSONObject rawContext;
 
   public String getId() {
@@ -42,22 +44,38 @@ public class BaseEntity {
     this.rawContext = rawContext;
   }
 
+  public String getStatus() {
+    return status;
+  }
+
+  public void setStatus(String status) {
+    this.status = status;
+  }
+
+  public boolean isCancel() {
+    return status.equals("cancel");
+  }
+
+  public boolean isClosed() {
+    return status.equals("closed");
+  }
+
   public BaseEntity of(Object object) {
     this.setRawContext((JSONObject) object);
     return this;
   }
 
-  public String getTitle(int maxLength) {
+  public String getMarkDown(String userName) {
+    String className = this.getClass().getSimpleName();
+    return userName + "\t\t" + className + "#" + getId() + "\t\t[" + getTitle(15) + "]("
+        + getViewUrl() + ")\n";
+  }
+
+  private String getTitle(int maxLength) {
     if (title.length() > maxLength) {
       return title.substring(0, maxLength) + "...";
     }
     return title;
-  }
-
-  public String getMarkDown(String userName) {
-    String className = this.getClass().getSimpleName();
-    return userName + "\t\t" + className + "#" + getId() + "\t\t[" + getTitle(10) + "]("
-        + getViewUrl() + ")\n";
   }
 
   protected String getViewUrl() {

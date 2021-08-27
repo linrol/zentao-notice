@@ -2,6 +2,7 @@ package com.alinkeji.zentaonotice.entity;
 
 import com.alibaba.fastjson.annotation.JSONField;
 import java.util.Date;
+import java.util.function.Predicate;
 
 /**
  * @Description
@@ -36,5 +37,26 @@ public class Task extends BaseEntity {
   @Override
   public String getViewUrl() {
     return String.format(taskView, this.getId());
+  }
+
+  /**
+   * 过滤已延期的任务，当前时间大于截止日期
+   *
+   * @return
+   */
+  public static Predicate<Task> filterDelay(boolean includeCancelled, boolean includeClosed) {
+    if (!includeCancelled && !includeClosed) {
+      // 不包含已取消和已关闭
+      return task -> new Date().after(task.getDeadLineTime()) &&
+          !task.isCancel() && !task.isClosed();
+    } else if (includeCancelled && includeClosed) {
+      // 包含已取消和已关闭
+      return task -> new Date().after(task.getDeadLineTime());
+    } else if (!includeCancelled) {
+      // 不包含已取消
+      return task -> new Date().after(task.getDeadLineTime()) && !task.isCancel();
+    }
+    // 不包含已关闭
+    return task -> new Date().after(task.getDeadLineTime()) && !task.isClosed();
   }
 }

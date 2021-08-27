@@ -1,6 +1,7 @@
 package com.alinkeji.zentaonotice.service.impl;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alinkeji.zentaonotice.entity.BaseEntity;
 import com.alinkeji.zentaonotice.entity.Bug;
@@ -12,6 +13,10 @@ import com.google.common.collect.Lists;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,22 +83,35 @@ public class ZentaoServiceImpl implements ZentaoService {
     }
     List<T> list = Lists.newArrayList();
     JSONObject data = result.getJSONObject("data");
-    if (zentaoResource.equals(ZentaoResource.BUG)) {
-      data.getJSONArray(zentaoResource.getField()).forEach(object -> {
+    String resourceField = zentaoResource.getField();
+    Object resource = data.get(resourceField);
+    if (resource == null) {
+      return Collections.emptyList();
+    }
+    if (resource instanceof JSONObject) {
+      JSONObject resourceJson = (JSONObject) resource;
+      for (Map.Entry<String, Object> entry : resourceJson.entrySet()) {
+        JSONObject jsonObject = (JSONObject) entry.getValue();
+        T entity = (T) jsonObject.toJavaObject(zentaoResource.getClazz()).of(jsonObject);
+        list.add(entity);
+      }
+    }
+    if (resource instanceof JSONArray) {
+      JSONArray resourceJson = (JSONArray) resource;
+      resourceJson.forEach(object -> {
         JSONObject jsonObject = (JSONObject) object;
         T entity = (T) jsonObject.toJavaObject(zentaoResource.getClazz()).of(jsonObject);
         list.add(entity);
       });
-    } else {
-      Object fieldJson = data.get(zentaoResource.getField());
-      if (fieldJson instanceof JSONObject) {
-        for (Map.Entry<String, Object> entry : ((JSONObject) fieldJson).entrySet()) {
-          JSONObject jsonObject = (JSONObject) entry.getValue();
-          T entity = (T) jsonObject.toJavaObject(zentaoResource.getClazz()).of(jsonObject);
-          list.add(entity);
-        }
-      }
     }
-    return list;
+    Stream<T> stream = filters(list.stream(), zentaoResource.getPredicateStack(), 0);
+    return stream.collect(Collectors.toList());
+  }
+
+  private <T> Stream<T> filters(Stream<T> stream, Stack<Predicate<T>> stack, int index) {
+    if (index >= stack.size()) {
+      return stream;
+    }
+    return filters(stream.filter(stack.peek()), stack, ++index);
   }
 }

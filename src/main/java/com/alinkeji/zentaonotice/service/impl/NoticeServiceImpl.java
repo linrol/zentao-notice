@@ -2,7 +2,6 @@ package com.alinkeji.zentaonotice.service.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.alinkeji.zentaonotice.ZentaoNoticeApplication;
 import com.alinkeji.zentaonotice.entity.BaseEntity;
 import com.alinkeji.zentaonotice.entity.Bug;
 import com.alinkeji.zentaonotice.entity.Task;
@@ -12,18 +11,12 @@ import com.alinkeji.zentaonotice.entity.WxWorkMessage.Markdown;
 import com.alinkeji.zentaonotice.enums.ZentaoResource;
 import com.alinkeji.zentaonotice.service.NoticeService;
 import com.alinkeji.zentaonotice.service.ZentaoService;
-import com.alinkeji.zentaonotice.service.ZentaoService.ListResourceHandler;
-import com.alinkeji.zentaonotice.util.DateUtils;
-import com.alinkeji.zentaonotice.util.HttpClientUtils;
 import com.alinkeji.zentaonotice.util.RedisUtil;
 import com.alinkeji.zentaonotice.util.ShutdownContext;
-import com.alinkeji.zentaonotice.util.SpringContextUtils;
 import com.google.common.collect.Lists;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,51 +74,29 @@ public class NoticeServiceImpl implements NoticeService, ApplicationRunner {
   @Autowired
   private RedisUtil redisUtil;
 
-  @Value("${notice.group}")
+  @Value("${notice.group:2engine}")
   private String noticeGroup;
-
-  private boolean noticeStatus = false;
 
   /**
    * 一次性通知
    *
    * @return
    */
-  @PostConstruct
   public boolean noticeOneTime() {
-    boolean noticeBug = this.notice2WxWork(ZentaoResource.BUG, new ListResourceHandler() {
-      @Override
-      public <T extends BaseEntity> List<T> filter(List<T> list) {
-        return list.stream().filter(f -> {
-          Bug bug = (Bug) f;
-          return bug.getCreatedTime().after(DateUtils.getOfDayFirst(new Date()));
-        }).collect(Collectors.toList());
-      }
-    });
+    ZentaoResource bugResource = ZentaoResource.BUG.ofPredicates(Bug.filterTodayCreated());
+    boolean noticeBug = this.notice2WxWork(bugResource);
 
-    boolean noticeTask = this.notice2WxWork(ZentaoResource.TASK, new ListResourceHandler() {
-      @Override
-      public <T extends BaseEntity> List<T> filter(List<T> list) {
-        return list.stream().filter(f -> {
-          Task task = (Task) f;
-          return new Date().after(task.getDeadLineTime());
-        }).collect(Collectors.toList());
-      }
-    });
-    if (noticeBug && noticeTask) {
-      return true;
-    }
-    return false;
+    ZentaoResource taskResource = ZentaoResource.TASK.ofPredicates(Task.filterDelay(false, false));
+    boolean noticeTask = this.notice2WxWork(taskResource);
+    return noticeBug && noticeTask;
   }
 
-  public <T extends BaseEntity> boolean notice2WxWork(ZentaoResource zentaoResource,
-      ListResourceHandler listResourceFilter) {
+  public <T extends BaseEntity> boolean notice2WxWork(ZentaoResource zentaoResource) {
     String contextTitle = "姓 名\t\t类型\t\t\t标题\n\n";
     String context = userList.stream().map(user -> {
       String resourceUrlId = user.getResourceUrlId(zentaoResource);
       String requestUrl = String.format(zentaoResource.getUrl(), resourceUrlId);
       List<T> resourceList = zentaoService.getResourceList(requestUrl, zentaoResource);
-      resourceList = listResourceFilter.filter(resourceList);
       if (resourceList.isEmpty()) {
         return null;
       }
@@ -148,10 +119,12 @@ public class NoticeServiceImpl implements NoticeService, ApplicationRunner {
     String pushMessage = JSON.toJSONString(wxWorkMessage);
     JSONObject jsonObject = JSON.parseObject(pushMessage);
     String hookKey = getWxWorkWebHookKey(noticeGroup);
-    String post = HttpClientUtils.post(String.format(wxWorkWebHook, hookKey), jsonObject);
-    noticeStatus = true;
-    logger.info("pre exist，done post: {}", post);
-    return true;
+    String post = "";
+    // String post = HttpClientUtils.post(String.format(wxWorkWebHook, hookKey), jsonObject);
+    logger.info("notice to wx work result: {}", post);
+    JSONObject postResult = JSONObject.parseObject(post);
+    return postResult != null && postResult.containsKey("errcode")
+        && postResult.getInteger("errcode") == 0;
   }
 
   /**
@@ -166,7 +139,8 @@ public class NoticeServiceImpl implements NoticeService, ApplicationRunner {
 
   @Override
   public void run(ApplicationArguments args) {
-    if (noticeStatus) {
+    boolean isNotice = this.noticeOneTime();
+    if (isNotice) {
       shutdownContext.showdown();
     }
   }

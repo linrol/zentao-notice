@@ -1,9 +1,9 @@
 package com.alinkeji.zentaonotice.entity;
 
 import com.alibaba.fastjson.annotation.JSONField;
+import com.alinkeji.zentaonotice.util.DateUtils;
 import java.util.Date;
-import java.util.List;
-import org.yaml.snakeyaml.events.Event.ID;
+import java.util.function.Predicate;
 
 /**
  * @Description
@@ -35,6 +35,15 @@ public class Bug extends BaseEntity {
   @Override
   public String getViewUrl() {
     return String.format(bugView, this.getId());
+  }
+
+  /**
+   * 过滤今天创建的bug
+   *
+   * @return
+   */
+  public static Predicate<Bug> filterTodayCreated() {
+    return bug -> bug.getCreatedTime().after(DateUtils.getOfDayFirst(new Date()));
   }
 
 }
