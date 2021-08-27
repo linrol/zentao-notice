@@ -56,6 +56,7 @@ public class ZentaoServiceImpl implements ZentaoService {
     JSONObject loginResult = JSON.parseObject(
         HttpClientUtils.get(String.format(loginUrl, user, password, zentaosid), null));
     if (!loginResult.getString("status").equals("success")) {
+      logger.error("user：{} password：{}", user, password);
       logger.error("登录失败：{}", loginResult.toJSONString());
       return false;
     }
