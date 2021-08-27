@@ -11,6 +11,7 @@ import com.alinkeji.zentaonotice.entity.WxWorkMessage.Markdown;
 import com.alinkeji.zentaonotice.enums.ZentaoResource;
 import com.alinkeji.zentaonotice.service.NoticeService;
 import com.alinkeji.zentaonotice.service.ZentaoService;
+import com.alinkeji.zentaonotice.util.HttpClientUtils;
 import com.alinkeji.zentaonotice.util.RedisUtil;
 import com.alinkeji.zentaonotice.util.ShutdownContext;
 import com.google.common.collect.Lists;
@@ -119,8 +120,8 @@ public class NoticeServiceImpl implements NoticeService, ApplicationRunner {
     String pushMessage = JSON.toJSONString(wxWorkMessage);
     JSONObject jsonObject = JSON.parseObject(pushMessage);
     String hookKey = getWxWorkWebHookKey(noticeGroup);
-    String post = "";
-    // String post = HttpClientUtils.post(String.format(wxWorkWebHook, hookKey), jsonObject);
+    // String post = "";
+    String post = HttpClientUtils.post(String.format(wxWorkWebHook, hookKey), jsonObject);
     logger.info("notice to wx work result: {}", post);
     JSONObject postResult = JSONObject.parseObject(post);
     return postResult != null && postResult.containsKey("errcode")
