@@ -123,11 +123,10 @@ public class NoticeServiceImpl implements NoticeService, ApplicationRunner {
     String pushMessage = JSON.toJSONString(wxWorkMessage);
     JSONObject jsonObject = JSON.parseObject(pushMessage);
     String hookKey = getWxWorkWebHookKey(noticeGroup);
+    logger.info("pre send wx work message:{}", pushMessage);
     if (isDebug) {
       return true;
     }
-    logger.info("pre send wx work message:{}", pushMessage);
-    // String post = "";
     String post = HttpClientUtils.post(String.format(wxWorkWebHook, hookKey), jsonObject);
     logger.info("notice to wx work result: {}", post);
     JSONObject postResult = JSONObject.parseObject(post);
