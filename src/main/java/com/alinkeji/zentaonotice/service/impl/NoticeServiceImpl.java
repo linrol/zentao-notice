@@ -78,6 +78,9 @@ public class NoticeServiceImpl implements NoticeService, ApplicationRunner {
   @Value("${notice.group:2engine}")
   private String noticeGroup;
 
+  @Value("${notice.debug:true}")
+  private boolean isDebug;
+
   /**
    * 一次性通知
    *
@@ -120,6 +123,10 @@ public class NoticeServiceImpl implements NoticeService, ApplicationRunner {
     String pushMessage = JSON.toJSONString(wxWorkMessage);
     JSONObject jsonObject = JSON.parseObject(pushMessage);
     String hookKey = getWxWorkWebHookKey(noticeGroup);
+    if (isDebug) {
+      logger.info("pre send wx work message:{}", pushMessage);
+      return true;
+    }
     // String post = "";
     String post = HttpClientUtils.post(String.format(wxWorkWebHook, hookKey), jsonObject);
     logger.info("notice to wx work result: {}", post);
@@ -140,8 +147,8 @@ public class NoticeServiceImpl implements NoticeService, ApplicationRunner {
 
   @Override
   public void run(ApplicationArguments args) {
-    boolean isNotice = this.noticeOneTime();
-    if (isNotice) {
+    boolean isNoticed = this.noticeOneTime();
+    if (isNoticed) {
       shutdownContext.showdown();
     }
   }
