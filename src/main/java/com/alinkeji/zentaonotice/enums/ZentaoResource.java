@@ -1,8 +1,10 @@
 package com.alinkeji.zentaonotice.enums;
 
+import com.alibaba.fastjson.TypeReference;
 import com.alinkeji.zentaonotice.entity.BaseEntity;
 import com.alinkeji.zentaonotice.entity.Bug;
 import com.alinkeji.zentaonotice.entity.Task;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Stack;
 import java.util.function.Predicate;
@@ -24,8 +26,13 @@ public enum ZentaoResource {
     this.predicateStack = new Stack<>();
   }
 
-  public <T extends BaseEntity> Class<T> getClazz() {
-    return (Class<T>) clazz;
+  public <T extends BaseEntity> TypeReference<T> getResourceType() {
+    return new TypeReference<T>(){
+      @Override
+      public Type getType() {
+        return clazz;
+      }
+    };
   }
 
   public String getField() {

@@ -92,7 +92,7 @@ public class ZentaoServiceImpl implements ZentaoService {
       JSONObject resourceJson = (JSONObject) resource;
       for (Map.Entry<String, Object> entry : resourceJson.entrySet()) {
         JSONObject jsonObject = (JSONObject) entry.getValue();
-        T entity = (T) jsonObject.toJavaObject(zentaoResource.getClazz()).of(jsonObject);
+        T entity = jsonObject.toJavaObject(zentaoResource.getResourceType());
         list.add(entity);
       }
     }
@@ -100,7 +100,7 @@ public class ZentaoServiceImpl implements ZentaoService {
       JSONArray resourceJson = (JSONArray) resource;
       resourceJson.forEach(object -> {
         JSONObject jsonObject = (JSONObject) object;
-        T entity = (T) jsonObject.toJavaObject(zentaoResource.getClazz()).of(jsonObject);
+        T entity = jsonObject.toJavaObject(zentaoResource.getResourceType());
         list.add(entity);
       });
     }
